@@ -1,49 +1,96 @@
 ---
 import { Image } from 'astro:assets';
 import type { Product } from '../lib/catalog';
-import { getCoverImage, formatPrice } from '../lib/catalog';
+import { getProductImages, formatPrice } from '../lib/catalog';
 
 interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
-const cover = getCoverImage(product.id);
+const images = getProductImages(product.id);
 const price = formatPrice(product.data.price, product.data.currency);
+const href = `/producto/${product.id}/`;
+const hasCarousel = images.length > 1;
 // data-title y data-tags permiten buscar y filtrar en el cliente sin recargar.
 const tagsAttr = product.data.tags.join(',');
 ---
 
 <article class="card" data-title={product.data.title} data-tags={tagsAttr}>
-  <a href={`/producto/${product.id}/`} class="card-link">
-    <div class="card-media">
-      {
-        cover ? (
-          <Image
-            src={cover}
-            alt={product.data.title}
-            widths={[300, 480, 640]}
-            sizes="(min-width: 900px) 300px, (min-width: 600px) 45vw, 90vw"
-            class="card-img"
-          />
-        ) : (
-          <div class="card-img placeholder">Sin foto</div>
-        )
-      }
-    </div>
-    <div class="card-body">
-      <h3 class="card-title">{product.data.title}</h3>
-      {price && <p class="card-price">{price}</p>}
-      {
-        product.data.tags.length > 0 && (
-          <ul class="card-tags">
-            {product.data.tags.map((t) => (
-              <li class="chip">{t}</li>
+  <div
+    class="card-media"
+    data-carousel={hasCarousel ? 'true' : undefined}
+  >
+    {
+      images.length > 0 ? (
+        <div class="carousel-viewport">
+          <ul class="carousel-track">
+            {images.map((img, i) => (
+              <li class="carousel-slide">
+                <a href={href} tabindex={i === 0 ? 0 : -1} aria-label={product.data.title}>
+                  <Image
+                    src={img}
+                    alt={`${product.data.title} — foto ${i + 1}`}
+                    widths={[300, 480, 640]}
+                    sizes="(min-width: 900px) 300px, (min-width: 600px) 45vw, 90vw"
+                    class="card-img"
+                  />
+                </a>
+              </li>
             ))}
           </ul>
-        )
-      }
-    </div>
+        </div>
+      ) : (
+        <a href={href} class="card-img placeholder">
+          Sin foto
+        </a>
+      )
+    }
+
+    {
+      hasCarousel && (
+        <>
+          <button
+            type="button"
+            class="carousel-btn prev"
+            aria-label={`Foto anterior de ${product.data.title}`}
+          >
+            <span aria-hidden="true">‹</span>
+          </button>
+          <button
+            type="button"
+            class="carousel-btn next"
+            aria-label={`Foto siguiente de ${product.data.title}`}
+          >
+            <span aria-hidden="true">›</span>
+          </button>
+          <div class="carousel-dots" role="tablist" aria-label="Fotos del producto">
+            {images.map((_, i) => (
+              <button
+                type="button"
+                class:list={['carousel-dot', { 'is-active': i === 0 }]}
+                aria-label={`Ver foto ${i + 1}`}
+                data-index={i}
+              />
+            ))}
+          </div>
+        </>
+      )
+    }
+  </div>
+
+  <a href={href} class="card-body">
+    <h3 class="card-title">{product.data.title}</h3>
+    {price && <p class="card-price">{price}</p>}
+    {
+      product.data.tags.length > 0 && (
+        <ul class="card-tags">
+          {product.data.tags.map((t) => (
+            <li class="chip">{t}</li>
+          ))}
+        </ul>
+      )
+    }
   </a>
 </article>
 
@@ -60,17 +107,34 @@ const tagsAttr = product.data.tags.join(',');
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
   }
-  .card-link {
-    color: inherit;
-    text-decoration: none;
-    display: block;
-  }
-  .card-link:hover {
-    text-decoration: none;
-  }
   .card-media {
+    position: relative;
     aspect-ratio: 4 / 3;
     background: var(--bg-soft);
+  }
+  .carousel-viewport {
+    height: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+  .carousel-track {
+    display: flex;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transition: transform 0.28s ease;
+  }
+  .carousel-slide {
+    flex: 0 0 100%;
+    min-width: 100%;
+    height: 100%;
+  }
+  .carousel-slide a {
+    display: block;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
   }
   .card-img {
     width: 100%;
@@ -83,9 +147,71 @@ const tagsAttr = product.data.tags.join(',');
     justify-content: center;
     color: var(--text-muted);
     font-size: 0.9rem;
+    text-decoration: none;
+  }
+  .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(254, 254, 254, 0.92);
+    color: var(--charcoal-blue);
+    font-size: 1.6rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+  .carousel-btn:hover {
+    background: var(--white);
+    color: var(--accent);
+  }
+  .carousel-btn.prev {
+    left: 0.45rem;
+  }
+  .carousel-btn.next {
+    right: 0.45rem;
+  }
+  .carousel-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.5rem;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    gap: 0.35rem;
+    pointer-events: none;
+  }
+  .carousel-dot {
+    pointer-events: auto;
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: rgba(254, 254, 254, 0.55);
+    cursor: pointer;
+  }
+  .carousel-dot.is-active {
+    background: var(--white);
+    transform: scale(1.2);
   }
   .card-body {
+    display: block;
     padding: 0.9rem 1rem 1.1rem;
+    color: inherit;
+    text-decoration: none;
+  }
+  .card-body:hover {
+    text-decoration: none;
   }
   .card-title {
     margin: 0 0 0.25rem;
@@ -104,4 +230,98 @@ const tagsAttr = product.data.tags.join(',');
     flex-wrap: wrap;
     gap: 0.35rem;
   }
+  @media (min-width: 640px) {
+    .carousel-btn {
+      width: 40px;
+      height: 40px;
+    }
+  }
 </style>
+
+<script>
+  function initCarousel(root: HTMLElement) {
+    const track = root.querySelector<HTMLElement>('.carousel-track');
+    if (!track) return;
+    const slides = Array.from(track.children);
+    const total = slides.length;
+    if (total < 2) return;
+
+    const prev = root.querySelector<HTMLButtonElement>('.carousel-btn.prev');
+    const next = root.querySelector<HTMLButtonElement>('.carousel-btn.next');
+    const dots = Array.from(
+      root.querySelectorAll<HTMLButtonElement>('.carousel-dot')
+    );
+    const links = Array.from(
+      track.querySelectorAll<HTMLAnchorElement>('.carousel-slide a')
+    );
+    const viewport = root.querySelector<HTMLElement>('.carousel-viewport');
+
+    let index = 0;
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let suppressClick = false;
+
+    function go(to: number) {
+      index = (to + total) % total;
+      track!.style.transform = `translateX(-${index * 100}%)`;
+      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
+      links.forEach((link, i) => {
+        link.tabIndex = i === index ? 0 : -1;
+      });
+    }
+
+    prev?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      go(index - 1);
+    });
+    next?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      go(index + 1);
+    });
+    dots.forEach((dot) => {
+      dot.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const i = Number(dot.dataset.index);
+        if (!Number.isNaN(i)) go(i);
+      });
+    });
+
+    viewport?.addEventListener('pointerdown', (event) => {
+      if ((event.target as HTMLElement).closest('button')) return;
+      tracking = true;
+      startX = event.clientX;
+      startY = event.clientY;
+    });
+    viewport?.addEventListener('pointerup', (event) => {
+      if (!tracking) return;
+      tracking = false;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        suppressClick = true;
+        go(index + (dx < 0 ? 1 : -1));
+      }
+    });
+    viewport?.addEventListener('pointercancel', () => {
+      tracking = false;
+    });
+    viewport?.addEventListener(
+      'click',
+      (event) => {
+        if (!suppressClick) return;
+        event.preventDefault();
+        event.stopPropagation();
+        suppressClick = false;
+      },
+      true
+    );
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-carousel]')) {
+    initCarousel(root);
+  }
+</script>
