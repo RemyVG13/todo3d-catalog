@@ -1,0 +1,260 @@
+---
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import {
+  getProducts,
+  getProductImages,
+  formatPrice,
+} from '../../lib/catalog';
+import { whatsappLink } from '../../data/site';
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return products.map((product) => ({
+    params: { slug: product.id },
+    props: { product },
+  }));
+}
+
+const { product } = Astro.props;
+const { Content } = await render(product);
+
+const images = getProductImages(product.id);
+const price = formatPrice(product.data.price, product.data.currency);
+const wa = whatsappLink(product.data.title);
+
+// Ficha técnica: solo mostramos los campos que existen.
+const specs = [
+  { label: 'Material', value: product.data.material },
+  { label: 'Medidas', value: product.data.dimensions },
+  { label: 'Peso', value: product.data.weight },
+].filter((s) => s.value);
+---
+
+<Base title={product.data.title} description={`${product.data.title} — ${product.data.tags.join(', ')}`}>
+  <p class="back"><a href="/">&larr; Volver al catálogo</a></p>
+
+  <div class="detail">
+    <section class="gallery" aria-label="Galería de fotos">
+      {
+        images.length > 0 ? (
+          <>
+            <div class="gallery-main">
+              <Image
+                id="gallery-main-img"
+                src={images[0]}
+                alt={product.data.title}
+                widths={[480, 768, 1024]}
+                sizes="(min-width: 900px) 560px, 92vw"
+                class="gallery-main-img"
+              />
+            </div>
+            {images.length > 1 && (
+              <ul class="thumbs" id="thumbs">
+                {images.map((img, i) => (
+                  <li>
+                    <button
+                      type="button"
+                      class:list={['thumb', { 'is-active': i === 0 }]}
+                      data-full={img.src}
+                      aria-label={`Ver foto ${i + 1}`}
+                    >
+                      <Image
+                        src={img}
+                        alt=""
+                        widths={[80, 160]}
+                        sizes="80px"
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <div class="gallery-empty">Sin fotos todavía</div>
+        )
+      }
+    </section>
+
+    <section class="info">
+      <h1>{product.data.title}</h1>
+      {price && <p class="price">{price}</p>}
+
+      {
+        product.data.tags.length > 0 && (
+          <ul class="tags">
+            {product.data.tags.map((t) => (
+              <li class="chip">{t}</li>
+            ))}
+          </ul>
+        )
+      }
+
+      <div class="description">
+        <Content />
+      </div>
+
+      {
+        specs.length > 0 && (
+          <dl class="specs">
+            {specs.map((s) => (
+              <div class="spec-row">
+                <dt>{s.label}</dt>
+                <dd>{s.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
+
+      {
+        wa && (
+          <a class="btn btn-whatsapp cta" href={wa} target="_blank" rel="noopener">
+            Consultar por WhatsApp
+          </a>
+        )
+      }
+    </section>
+  </div>
+</Base>
+
+<style>
+  .back {
+    margin: 0 0 1rem;
+  }
+  .detail {
+    display: grid;
+    gap: clamp(1.25rem, 4vw, 2.5rem);
+    align-items: start;
+  }
+  @media (min-width: 860px) {
+    .detail {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    }
+    .gallery {
+      position: sticky;
+      top: 90px;
+    }
+  }
+  .gallery-main {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+  }
+  .gallery-main-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .gallery-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4 / 3;
+    background: var(--bg-soft);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+  }
+  .thumbs {
+    list-style: none;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    flex-wrap: wrap;
+  }
+  .thumb {
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg-soft);
+    width: 72px;
+    height: 72px;
+  }
+  .thumb :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .thumb.is-active {
+    border-color: var(--accent);
+  }
+  .info h1 {
+    margin-top: 0;
+  }
+  .price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 0.75rem;
+  }
+  .tags {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .description {
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  .specs {
+    margin: 0 0 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .spec-row dt {
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .spec-row dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+  }
+  .cta {
+    width: 100%;
+  }
+  @media (min-width: 520px) {
+    .cta {
+      width: auto;
+    }
+  }
+</style>
+
+<script>
+  // Cambia la imagen principal al tocar una miniatura.
+  const mainImg = document.getElementById(
+    'gallery-main-img'
+  ) as HTMLImageElement | null;
+  const thumbs = document.getElementById('thumbs');
+  if (mainImg && thumbs) {
+    const buttons = Array.from(
+      thumbs.querySelectorAll<HTMLButtonElement>('.thumb')
+    );
+    for (const btn of buttons) {
+      btn.addEventListener('click', () => {
+        const full = btn.dataset.full;
+        if (!full) return;
+        mainImg.src = full;
+        mainImg.removeAttribute('srcset');
+        for (const b of buttons) b.classList.toggle('is-active', b === btn);
+      });
+    }
+  }
+</script>

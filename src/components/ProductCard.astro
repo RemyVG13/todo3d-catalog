@@ -1,0 +1,107 @@
+---
+import { Image } from 'astro:assets';
+import type { Product } from '../lib/catalog';
+import { getCoverImage, formatPrice } from '../lib/catalog';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const cover = getCoverImage(product.id);
+const price = formatPrice(product.data.price, product.data.currency);
+// data-tags permite el filtrado en el cliente sin recargar.
+const tagsAttr = product.data.tags.join(',');
+---
+
+<article class="card" data-tags={tagsAttr}>
+  <a href={`/producto/${product.id}/`} class="card-link">
+    <div class="card-media">
+      {
+        cover ? (
+          <Image
+            src={cover}
+            alt={product.data.title}
+            widths={[300, 480, 640]}
+            sizes="(min-width: 900px) 300px, (min-width: 600px) 45vw, 90vw"
+            class="card-img"
+          />
+        ) : (
+          <div class="card-img placeholder">Sin foto</div>
+        )
+      }
+    </div>
+    <div class="card-body">
+      <h3 class="card-title">{product.data.title}</h3>
+      {price && <p class="card-price">{price}</p>}
+      {
+        product.data.tags.length > 0 && (
+          <ul class="card-tags">
+            {product.data.tags.map((t) => (
+              <li class="chip">{t}</li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </a>
+</article>
+
+<style>
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .card-link {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+  .card-link:hover {
+    text-decoration: none;
+  }
+  .card-media {
+    aspect-ratio: 4 / 3;
+    background: var(--bg-soft);
+  }
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  .card-body {
+    padding: 0.9rem 1rem 1.1rem;
+  }
+  .card-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.05rem;
+  }
+  .card-price {
+    margin: 0 0 0.6rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .card-tags {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+</style>

@@ -1,0 +1,4 @@
+# Cloudflare Pages headers
+# Assets con hash (imágenes/CSS/JS procesados por Astro) pueden cachearse fuerte.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

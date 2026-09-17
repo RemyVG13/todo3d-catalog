@@ -1,0 +1,176 @@
+---
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { getProducts, collectTags } from '../lib/catalog';
+
+const products = await getProducts();
+const tags = collectTags(products);
+---
+
+<Base>
+  <section class="intro">
+    <h1>Catálogo</h1>
+    <p class="lead">
+      Explora nuestros productos de impresión 3D. Filtra por categoría con las
+      etiquetas de abajo.
+    </p>
+  </section>
+
+  {
+    tags.length > 0 && (
+      <nav class="filters" aria-label="Filtrar por categoría">
+        <ul class="filter-list" id="tag-filters">
+          <li>
+            <button
+              type="button"
+              class="chip chip-filter is-active"
+              data-tag="__all__"
+              aria-pressed="true"
+            >
+              Todos
+            </button>
+          </li>
+          {tags.map((t) => (
+            <li>
+              <button
+                type="button"
+                class="chip chip-filter"
+                data-tag={t}
+                aria-pressed="false"
+              >
+                {t}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )
+  }
+
+  {
+    products.length === 0 ? (
+      <p class="empty">
+        Aún no hay productos. Añade uno en <code>src/content/products/</code>.
+      </p>
+    ) : (
+      <>
+        <div class="grid" id="product-grid">
+          {products.map((product) => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+        <p class="empty" id="no-results" hidden>
+          No hay productos con esa categoría.
+        </p>
+      </>
+    )
+  }
+</Base>
+
+<style>
+  .intro {
+    margin-bottom: 1.25rem;
+  }
+  .lead {
+    color: var(--text-muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+  .filters {
+    margin-bottom: 1.5rem;
+  }
+  .filter-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    /* En móviles muy angostos permite scroll horizontal cómodo. */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chip-filter {
+    cursor: pointer;
+    min-height: 40px;
+    font-size: 0.9rem;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .chip-filter:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .chip-filter.is-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: clamp(1rem, 3vw, 1.5rem);
+  }
+  .empty {
+    color: var(--text-muted);
+    padding: 2rem 0;
+  }
+</style>
+
+<script>
+  // Filtrado por tags en el cliente. OR: muestra productos que tengan
+  // CUALQUIERA de las categorías seleccionadas. "Todos" limpia la selección.
+  const filterBar = document.getElementById('tag-filters');
+  const grid = document.getElementById('product-grid');
+  const noResults = document.getElementById('no-results');
+
+  if (filterBar && grid) {
+    const buttons = Array.from(
+      filterBar.querySelectorAll<HTMLButtonElement>('.chip-filter')
+    );
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+    const selected = new Set<string>();
+
+    function setPressed(btn: HTMLButtonElement, on: boolean) {
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    }
+
+    function apply() {
+      let visible = 0;
+      for (const card of cards) {
+        const tags = (card.dataset.tags || '')
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
+        const show =
+          selected.size === 0 || tags.some((t) => selected.has(t));
+        card.hidden = !show;
+        if (show) visible++;
+      }
+      if (noResults) noResults.hidden = visible !== 0;
+    }
+
+    for (const btn of buttons) {
+      btn.addEventListener('click', () => {
+        const tag = btn.dataset.tag;
+        if (!tag) return;
+        if (tag === '__all__') {
+          selected.clear();
+        } else if (selected.has(tag)) {
+          selected.delete(tag);
+        } else {
+          selected.add(tag);
+        }
+        // "Todos" activo solo cuando no hay selección.
+        for (const b of buttons) {
+          if (b.dataset.tag === '__all__') {
+            setPressed(b, selected.size === 0);
+          } else {
+            setPressed(b, selected.has(b.dataset.tag || ''));
+          }
+        }
+        apply();
+      });
+    }
+  }
+</script>

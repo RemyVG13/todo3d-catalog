@@ -1,0 +1,12 @@
+/* CSS HEX */
+--tropical-teal: #37AAAEff;
+--white: #FEFEFEff;
+--charcoal-blue: #3A444Dff;
+--cool-steel: #9DA2A6ff;
+
+/* CSS HSL */
+--tropical-teal: hsla(182, 52%, 45%, 1);
+--white: hsla(0, 0%, 100%, 1);
+--charcoal-blue: hsla(208, 14%, 26%, 1);
+--cool-steel: hsla(207, 5%, 63%, 1);
+
