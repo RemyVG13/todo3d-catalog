@@ -10,11 +10,11 @@ interface Props {
 const { product } = Astro.props;
 const cover = getCoverImage(product.id);
 const price = formatPrice(product.data.price, product.data.currency);
-// data-tags permite el filtrado en el cliente sin recargar.
+// data-title y data-tags permiten buscar y filtrar en el cliente sin recargar.
 const tagsAttr = product.data.tags.join(',');
 ---
 
-<article class="card" data-tags={tagsAttr}>
+<article class="card" data-title={product.data.title} data-tags={tagsAttr}>
   <a href={`/producto/${product.id}/`} class="card-link">
     <div class="card-media">
       {

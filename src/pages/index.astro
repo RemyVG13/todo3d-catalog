@@ -11,41 +11,57 @@ const tags = collectTags(products);
   <section class="intro">
     <h1>Catálogo</h1>
     <p class="lead">
-      Explora nuestros productos de impresión 3D. Filtra por categoría con las
-      etiquetas de abajo.
+      Explora nuestros productos de impresión 3D. Busca por nombre o categoría,
+      o filtra con las etiquetas.
     </p>
   </section>
 
-  {
-    tags.length > 0 && (
-      <nav class="filters" aria-label="Filtrar por categoría">
-        <ul class="filter-list" id="tag-filters">
-          <li>
-            <button
-              type="button"
-              class="chip chip-filter is-active"
-              data-tag="__all__"
-              aria-pressed="true"
-            >
-              Todos
-            </button>
-          </li>
-          {tags.map((t) => (
+  <div class="catalog-toolbar">
+    <form class="search" role="search" onsubmit="return false">
+      <label class="visually-hidden" for="catalog-search">
+        Buscar productos por nombre o categoría
+      </label>
+      <input
+        id="catalog-search"
+        type="search"
+        name="q"
+        placeholder="Buscar por nombre o categoría…"
+        autocomplete="off"
+        enterkeyhint="search"
+      />
+    </form>
+
+    {
+      tags.length > 0 && (
+        <nav class="filters" aria-label="Filtrar por categoría">
+          <ul class="filter-list" id="tag-filters">
             <li>
               <button
                 type="button"
-                class="chip chip-filter"
-                data-tag={t}
-                aria-pressed="false"
+                class="chip chip-filter is-active"
+                data-tag="__all__"
+                aria-pressed="true"
               >
-                {t}
+                Todos
               </button>
             </li>
-          ))}
-        </ul>
-      </nav>
-    )
-  }
+            {tags.map((t) => (
+              <li>
+                <button
+                  type="button"
+                  class="chip chip-filter"
+                  data-tag={t}
+                  aria-pressed="false"
+                >
+                  {t}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+  </div>
 
   {
     products.length === 0 ? (
@@ -60,7 +76,7 @@ const tags = collectTags(products);
           ))}
         </div>
         <p class="empty" id="no-results" hidden>
-          No hay productos con esa categoría.
+          No hay productos que coincidan con la búsqueda o las categorías.
         </p>
       </>
     )
@@ -76,8 +92,37 @@ const tags = collectTags(products);
     max-width: 60ch;
     margin: 0;
   }
-  .filters {
+  .catalog-toolbar {
     margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .search {
+    width: 100%;
+  }
+  .search input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    outline: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .search input::placeholder {
+    color: var(--text-muted);
+  }
+  .search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(55, 170, 174, 0.2);
+  }
+  .filters {
+    margin: 0;
   }
   .filter-list {
     list-style: none;
@@ -117,16 +162,28 @@ const tags = collectTags(products);
 </style>
 
 <script>
-  // Filtrado por tags en el cliente. OR: muestra productos que tengan
-  // CUALQUIERA de las categorías seleccionadas. "Todos" limpia la selección.
+  // Búsqueda por título o tags + filtro por categorías, todo en el cliente.
+  // La búsqueda es insensible a mayúsculas y acentos. Tags y texto se combinan
+  // (AND): el producto debe coincidir con el texto y con alguna categoría activa.
   const filterBar = document.getElementById('tag-filters');
   const grid = document.getElementById('product-grid');
   const noResults = document.getElementById('no-results');
+  const searchInput = document.getElementById(
+    'catalog-search'
+  ) as HTMLInputElement | null;
 
-  if (filterBar && grid) {
-    const buttons = Array.from(
-      filterBar.querySelectorAll<HTMLButtonElement>('.chip-filter')
-    );
+  function normalize(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  if (grid) {
+    const buttons = filterBar
+      ? Array.from(filterBar.querySelectorAll<HTMLButtonElement>('.chip-filter'))
+      : [];
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
     const selected = new Set<string>();
 
@@ -136,19 +193,28 @@ const tags = collectTags(products);
     }
 
     function apply() {
+      const query = normalize(searchInput?.value ?? '');
       let visible = 0;
       for (const card of cards) {
+        const title = card.dataset.title || '';
         const tags = (card.dataset.tags || '')
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean);
-        const show =
+        const matchesSearch =
+          query.length === 0 ||
+          normalize(title).includes(query) ||
+          tags.some((t) => normalize(t).includes(query));
+        const matchesTags =
           selected.size === 0 || tags.some((t) => selected.has(t));
+        const show = matchesSearch && matchesTags;
         card.hidden = !show;
         if (show) visible++;
       }
       if (noResults) noResults.hidden = visible !== 0;
     }
+
+    searchInput?.addEventListener('input', apply);
 
     for (const btn of buttons) {
       btn.addEventListener('click', () => {
@@ -161,7 +227,6 @@ const tags = collectTags(products);
         } else {
           selected.add(tag);
         }
-        // "Todos" activo solo cuando no hay selección.
         for (const b of buttons) {
           if (b.dataset.tag === '__all__') {
             setPressed(b, selected.size === 0);

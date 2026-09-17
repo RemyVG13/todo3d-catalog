@@ -5,7 +5,7 @@ import { glob } from 'astro/loaders';
 // Las imágenes (.jpg/.png/.webp/.avif) van en esa misma carpeta.
 const products = defineCollection({
   loader: glob({
-    pattern: '**/index.md',
+    pattern: '*/index.md',
     base: './src/content/products',
     // El id (slug) es el nombre de la carpeta, sin "/index.md".
     generateId: ({ entry }) => entry.replace(/\/index\.md$/i, ''),

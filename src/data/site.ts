@@ -12,10 +12,10 @@ export const site = {
   // Ejemplo Colombia: 57 + número => '573001234567'. Déjalo vacío para ocultar el botón.
   whatsapp: '59161680104',
 
-  // Moneda por defecto si un producto no define la suya.
-  currency: 'COP',
+  // Moneda por defecto si un producto no define la suya (bolivianos).
+  currency: 'BOB',
   // Locale para formatear precios (separadores de miles, etc.).
-  locale: 'es-CO',
+  locale: 'es-BO',
 } as const;
 
 // Construye el enlace de WhatsApp con un mensaje pre-rellenado.

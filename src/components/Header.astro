@@ -41,7 +41,7 @@ import isologo from '../../logos/isologo_nobackground.png';
   .header-inner {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
     padding-block: 0.6rem;
   }
@@ -56,13 +56,17 @@ import isologo from '../../logos/isologo_nobackground.png';
   }
   .logo-full {
     display: none;
-    max-height: 56px;
+    max-height: 112px;
   }
   .logo-compact {
     display: block;
     max-height: 48px;
   }
   @media (min-width: 640px) {
+    .header-inner {
+      justify-content: flex-start;
+      padding-block: 0.75rem;
+    }
     .logo-full {
       display: block;
     }

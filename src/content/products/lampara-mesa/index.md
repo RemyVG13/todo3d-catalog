@@ -1,7 +1,7 @@
 ---
 title: Lámpara de mesa geométrica
 price: 150000
-currency: COP
+currency: BOB
 tags: [iluminacion, hogar, decoracion]
 material: PLA mate
 weight: "0.9 kg"

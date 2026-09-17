@@ -1,7 +1,7 @@
 ---
 title: Organizador de escritorio modular
 price: 65000
-currency: COP
+currency: BOB
 tags: [oficina, hogar, organizacion]
 material: PETG
 weight: "0.4 kg"

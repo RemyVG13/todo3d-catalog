@@ -22,8 +22,8 @@ Los logos están en [`../logos/`](../logos/) en PNG con transparencia.
 
 | Archivo | Qué contiene | Dónde se usa |
 |---|---|---|
-| `logos/full_logo_nobackground.png` | Icono + "ToDo3D" + leyenda debajo | Header en escritorio (≥640px) |
-| `logos/isologo_nobackground.png` | Icono + "ToDo3D" centrado (sin leyenda) | Header compacto en móvil (<640px) |
+| `logos/full_logo_nobackground.png` | Icono + "ToDo3D" + leyenda debajo | Header en escritorio (≥640px), alineado a la izquierda |
+| `logos/isologo_nobackground.png` | Icono + "ToDo3D" centrado (sin leyenda) | Header en móvil (<640px), centrado arriba |
 | `logos/isotipo_nobackground.png` | Solo el cubo (icono) | Favicon / icono pequeño |
 
 No es obligatorio usar los tres en cada pantalla.
@@ -55,7 +55,7 @@ tokens CSS en [`../src/styles/global.css`](../src/styles/global.css).
 ```yaml
 title: Nombre del producto      # obligatorio
 price: 150000                   # opcional (número, sin símbolos)
-currency: COP                   # opcional (por defecto, la de src/data/site.ts)
+currency: BOB                   # opcional (por defecto, bolivianos)
 tags: [iluminacion, hogar]      # opcional (para filtrar por categoría)
 material: PLA                   # opcional
 weight: "1.2 kg"               # opcional
@@ -67,10 +67,14 @@ draft: false                    # opcional (true lo oculta sin borrarlo)
 ## Configuración global
 
 [`../src/data/site.ts`](../src/data/site.ts): nombre, tagline, número de
-WhatsApp, moneda y locale. Es el único archivo a tocar para esos datos.
+WhatsApp, moneda (bolivianos, `BOB`) y locale (`es-BO`). Es el único archivo a
+tocar para esos datos.
+
+El listado combina una **barra de búsqueda** (título o tags) con los filtros
+por categoría.
 
 ## Responsive
 
 Diseño mobile-first. Verificar en ~375px (móvil) y ~1280px (escritorio):
-header/logo legible sobre blanco, filtros por tags, grid de productos, galería
-y botón de WhatsApp.
+header/logo legible sobre blanco, barra de búsqueda, filtros por tags, grid de
+productos, galería y botón de WhatsApp.

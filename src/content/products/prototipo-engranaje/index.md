@@ -1,7 +1,7 @@
 ---
 title: Prototipo de engranaje a medida
 price: 90000
-currency: COP
+currency: BOB
 tags: [prototipado, industrial, ingenieria]
 material: Resina resistente
 weight: "0.2 kg"

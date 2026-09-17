@@ -29,7 +29,7 @@ Requiere Node 18.20+ / 20.3+ / 22+.
 ---
 title: Lámpara de mesa
 price: 150000
-currency: COP
+currency: BOB
 tags: [iluminacion, hogar]
 material: PLA
 weight: "1.2 kg"
