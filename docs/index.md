@@ -67,8 +67,8 @@ draft: false                    # opcional (true lo oculta sin borrarlo)
 ## Configuración global
 
 [`../src/data/site.ts`](../src/data/site.ts): nombre, tagline, número de
-WhatsApp, moneda (bolivianos, `BOB`) y locale (`es-BO`). Es el único archivo a
-tocar para esos datos.
+WhatsApp, redes sociales (Instagram, TikTok, Facebook), moneda (bolivianos,
+`BOB`) y locale (`es-BO`). Es el único archivo a tocar para esos datos.
 
 El listado combina una **barra de búsqueda** (título o tags) con los filtros
 por categoría.

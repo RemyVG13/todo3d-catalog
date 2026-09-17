@@ -16,6 +16,21 @@ export const site = {
   currency: 'BOB',
   // Locale para formatear precios (separadores de miles, etc.).
   locale: 'es-BO',
+
+  socials: [
+    {
+      name: 'Instagram',
+      href: 'https://www.instagram.com/todo3d.bolivia/',
+    },
+    {
+      name: 'TikTok',
+      href: 'https://www.tiktok.com/@todo3d.bolivia',
+    },
+    {
+      name: 'Facebook',
+      href: 'https://www.facebook.com/profile.php?id=61594487879300',
+    },
+  ],
 } as const;
 
 // Construye el enlace de WhatsApp con un mensaje pre-rellenado.
