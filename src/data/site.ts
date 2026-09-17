@@ -10,7 +10,7 @@ export const site = {
 
   // Número de WhatsApp en formato internacional SIN "+", espacios ni guiones.
   // Ejemplo Colombia: 57 + número => '573001234567'. Déjalo vacío para ocultar el botón.
-  whatsapp: '573001234567',
+  whatsapp: '59161680104',
 
   // Moneda por defecto si un producto no define la suya.
   currency: 'COP',
