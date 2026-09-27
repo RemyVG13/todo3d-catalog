@@ -2,9 +2,11 @@
 import Base from '../layouts/Base.astro';
 import ProductCard from '../components/ProductCard.astro';
 import { getProducts, collectTags } from '../lib/catalog';
+import { site, whatsappRequestLink } from '../data/site';
 
 const products = await getProducts();
 const tags = collectTags(products);
+const requestWa = whatsappRequestLink();
 ---
 
 <Base>
@@ -75,9 +77,26 @@ const tags = collectTags(products);
             <ProductCard product={product} />
           ))}
         </div>
-        <p class="empty" id="no-results" hidden>
-          No hay productos que coincidan con la búsqueda o las categorías.
-        </p>
+        <div class="empty empty-request" id="no-results" hidden>
+          <p>
+            No encontramos lo que buscas. Si no está en el catálogo, escríbenos
+            y lo creamos para ti.
+          </p>
+          {
+            requestWa && (
+              <a
+                class="btn btn-whatsapp"
+                id="no-results-wa"
+                href={requestWa}
+                data-phone={site.whatsapp}
+                target="_blank"
+                rel="noopener"
+              >
+                Escríbenos por WhatsApp
+              </a>
+            )
+          }
+        </div>
       </>
     )
   }
@@ -159,12 +178,31 @@ const tags = collectTags(products);
     color: var(--text-muted);
     padding: 2rem 0;
   }
+  .empty-request {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    max-width: 40rem;
+  }
+  .empty-request[hidden] {
+    display: none;
+  }
+  .empty-request p {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
 </style>
 
 <script>
   // Búsqueda por título o tags + filtro por categorías, todo en el cliente.
   // La búsqueda es insensible a mayúsculas y acentos. Tags y texto se combinan
   // (AND): el producto debe coincidir con el texto y con alguna categoría activa.
+  //
+  // Enlaces para QR / compartir:
+  //   /?tags=juguete
+  //   /?tags=juguete,plantas
   const filterBar = document.getElementById('tag-filters');
   const grid = document.getElementById('product-grid');
   const noResults = document.getElementById('no-results');
@@ -185,11 +223,26 @@ const tags = collectTags(products);
       ? Array.from(filterBar.querySelectorAll<HTMLButtonElement>('.chip-filter'))
       : [];
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+    const knownTags = new Map<string, string>();
+    for (const btn of buttons) {
+      const tag = btn.dataset.tag;
+      if (tag && tag !== '__all__') knownTags.set(normalize(tag), tag);
+    }
     const selected = new Set<string>();
 
     function setPressed(btn: HTMLButtonElement, on: boolean) {
       btn.classList.toggle('is-active', on);
       btn.setAttribute('aria-pressed', String(on));
+    }
+
+    function syncButtons() {
+      for (const b of buttons) {
+        if (b.dataset.tag === '__all__') {
+          setPressed(b, selected.size === 0);
+        } else {
+          setPressed(b, selected.has(b.dataset.tag || ''));
+        }
+      }
     }
 
     function apply() {
@@ -212,9 +265,56 @@ const tags = collectTags(products);
         if (show) visible++;
       }
       if (noResults) noResults.hidden = visible !== 0;
+      const wa = document.getElementById(
+        'no-results-wa'
+      ) as HTMLAnchorElement | null;
+      if (wa) {
+        const typed = searchInput?.value.trim() ?? '';
+        const detail = typed ? ` Busqué: "${typed}".` : '';
+        const text = `Hola ToDo3D, no encontré lo que busco en el catálogo.${detail} ¿Pueden crearlo?`;
+        wa.href = `https://wa.me/${wa.dataset.phone || ''}?text=${encodeURIComponent(text)}`;
+      }
     }
 
-    searchInput?.addEventListener('input', apply);
+    function writeUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (selected.size > 0) {
+        params.set('tags', [...selected].join(','));
+      } else {
+        params.delete('tags');
+        params.delete('categorias');
+      }
+      const query = searchInput?.value.trim() ?? '';
+      if (query) params.set('q', query);
+      else params.delete('q');
+      const next = params.toString();
+      const url = next ? `${window.location.pathname}?${next}` : window.location.pathname;
+      history.replaceState(null, '', url);
+    }
+
+    function readUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const raw =
+        params.get('tags') ||
+        params.get('categorias') ||
+        '';
+      selected.clear();
+      for (const part of raw.split(',')) {
+        const known = knownTags.get(normalize(part));
+        if (known) selected.add(known);
+      }
+      const q = params.get('q');
+      if (q && searchInput) searchInput.value = q;
+    }
+
+    readUrl();
+    syncButtons();
+    apply();
+
+    searchInput?.addEventListener('input', () => {
+      apply();
+      writeUrl();
+    });
 
     for (const btn of buttons) {
       btn.addEventListener('click', () => {
@@ -227,14 +327,9 @@ const tags = collectTags(products);
         } else {
           selected.add(tag);
         }
-        for (const b of buttons) {
-          if (b.dataset.tag === '__all__') {
-            setPressed(b, selected.size === 0);
-          } else {
-            setPressed(b, selected.has(b.dataset.tag || ''));
-          }
-        }
+        syncButtons();
         apply();
+        writeUrl();
       });
     }
   }

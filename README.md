@@ -28,7 +28,7 @@ Requiere Node 18.20+ / 20.3+ / 22+.
 ```markdown
 ---
 title: Lámpara de mesa
-price: 150000
+price: 65
 currency: BOB
 tags: [iluminacion, hogar]
 material: PLA
@@ -39,11 +39,26 @@ dimensions: "20 × 20 × 35 cm"
 Descripción del producto. Este texto aparece en la ficha.
 ```
 
+Si el mismo modelo se imprime unicolor o multicolor, usa `variants` en lugar
+de un solo `price` (ver el Bebé Dragón). En el listado se verá “Desde …”.
+
 Todos los campos excepto `title` son opcionales. Haz `git push` y Cloudflare
 Pages reconstruye el sitio.
 
 **Quitar un producto:** borra su carpeta y haz push (o pon `draft: true` en el
 frontmatter para ocultarlo sin borrarlo).
+
+## Enlaces y QR por categoría
+
+El catálogo puede abrir ya filtrado. Usa el tag exacto del producto:
+
+```
+https://TU-DOMINIO/?tags=juguete
+https://TU-DOMINIO/?tags=juguete,plantas
+```
+
+Varias categorías se separan por coma: muestra productos que tengan **cualquiera**
+de ellas. Al elegir tags en la página, la URL cambia sola (útil para copiarla).
 
 ## Configuración
 

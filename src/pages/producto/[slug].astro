@@ -6,6 +6,7 @@ import {
   getProducts,
   getProductImages,
   formatPrice,
+  resolveImageDisplay,
 } from '../../lib/catalog';
 import { whatsappLink } from '../../data/site';
 
@@ -21,8 +22,25 @@ const { product } = Astro.props;
 const { Content } = await render(product);
 
 const images = getProductImages(product.id);
-const price = formatPrice(product.data.price, product.data.currency);
-const wa = whatsappLink(product.data.title);
+const firstDisplay = images[0]
+  ? resolveImageDisplay(product, images[0].filename)
+  : null;
+const variants = product.data.variants;
+const hasVariants = variants.length > 0;
+const initialVariant = hasVariants ? variants[0] : undefined;
+const price = formatPrice(
+  initialVariant?.price ?? product.data.price,
+  product.data.currency
+);
+const wa = whatsappLink(product.data.title, initialVariant?.name);
+
+const variantPayload = variants.map((v) => ({
+  name: v.name,
+  note: v.note ?? '',
+  price: v.price,
+  priceLabel: formatPrice(v.price, product.data.currency) ?? '',
+  wa: whatsappLink(product.data.title, v.name) ?? '',
+}));
 
 // Ficha técnica: solo mostramos los campos que existen.
 const specs = [
@@ -43,32 +61,39 @@ const specs = [
             <div class="gallery-main">
               <Image
                 id="gallery-main-img"
-                src={images[0]}
+                src={images[0].src}
                 alt={product.data.title}
                 widths={[480, 768, 1024]}
                 sizes="(min-width: 900px) 560px, 92vw"
                 class="gallery-main-img"
+                style={`object-fit: ${firstDisplay?.fit ?? 'contain'}; object-position: ${firstDisplay?.position ?? 'center'};`}
               />
             </div>
             {images.length > 1 && (
               <ul class="thumbs" id="thumbs">
-                {images.map((img, i) => (
+                {images.map((img, i) => {
+                  const display = resolveImageDisplay(product, img.filename);
+                  return (
                   <li>
                     <button
                       type="button"
                       class:list={['thumb', { 'is-active': i === 0 }]}
-                      data-full={img.src}
+                      data-full={img.src.src}
+                      data-fit={display.fit}
+                      data-position={display.position}
                       aria-label={`Ver foto ${i + 1}`}
                     >
                       <Image
-                        src={img}
+                        src={img.src}
                         alt=""
                         widths={[80, 160]}
                         sizes="80px"
+                        style={`object-fit: ${display.fit}; object-position: ${display.position};`}
                       />
                     </button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </>
@@ -80,7 +105,31 @@ const specs = [
 
     <section class="info">
       <h1>{product.data.title}</h1>
-      {price && <p class="price">{price}</p>}
+      {price && <p class="price" id="selected-price">{price}</p>}
+
+      {
+        hasVariants && (
+          <div class="variants" id="variants">
+            <p class="variants-label">Elige cómo lo imprimimos</p>
+            {variantPayload.map((v, i) => (
+              <button
+                type="button"
+                class:list={['variant', { 'is-active': i === 0 }]}
+                data-name={v.name}
+                data-price-label={v.priceLabel}
+                data-wa={v.wa}
+                aria-pressed={i === 0 ? 'true' : 'false'}
+              >
+                <span class="variant-top">
+                  <strong>{v.name}</strong>
+                  <span class="variant-price">{v.priceLabel}</span>
+                </span>
+                {v.note && <span class="variant-note">{v.note}</span>}
+              </button>
+            ))}
+          </div>
+        )
+      }
 
       {
         product.data.tags.length > 0 && (
@@ -111,7 +160,13 @@ const specs = [
 
       {
         wa && (
-          <a class="btn btn-whatsapp cta" href={wa} target="_blank" rel="noopener">
+          <a
+            class="btn btn-whatsapp cta"
+            id="wa-cta"
+            href={wa}
+            target="_blank"
+            rel="noopener"
+          >
             Consultar por WhatsApp
           </a>
         )
@@ -148,7 +203,8 @@ const specs = [
   .gallery-main-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
   }
   .gallery-empty {
     display: flex;
@@ -194,6 +250,53 @@ const specs = [
     font-weight: 700;
     color: var(--accent);
     margin: 0 0 0.75rem;
+  }
+  .variants {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0 0 1.25rem;
+  }
+  .variants-label {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .variant {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.2rem;
+    text-align: left;
+    padding: 0.75rem 0.9rem;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: inherit;
+    cursor: pointer;
+  }
+  .variant:hover {
+    border-color: var(--accent);
+  }
+  .variant.is-active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(55, 170, 174, 0.25);
+    background: #f3fbfb;
+  }
+  .variant-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+  }
+  .variant-price {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .variant-note {
+    color: var(--text-muted);
+    font-size: 0.9rem;
   }
   .tags {
     list-style: none;
@@ -253,7 +356,34 @@ const specs = [
         if (!full) return;
         mainImg.src = full;
         mainImg.removeAttribute('srcset');
+        mainImg.style.objectFit = btn.dataset.fit || 'contain';
+        mainImg.style.objectPosition = btn.dataset.position || 'center';
         for (const b of buttons) b.classList.toggle('is-active', b === btn);
+      });
+    }
+  }
+
+  // Selección de variante: actualiza precio visible y el mensaje de WhatsApp.
+  const variantBox = document.getElementById('variants');
+  const priceEl = document.getElementById('selected-price');
+  const waCta = document.getElementById('wa-cta') as HTMLAnchorElement | null;
+  if (variantBox) {
+    const options = Array.from(
+      variantBox.querySelectorAll<HTMLButtonElement>('.variant')
+    );
+    for (const option of options) {
+      option.addEventListener('click', () => {
+        for (const o of options) {
+          const on = o === option;
+          o.classList.toggle('is-active', on);
+          o.setAttribute('aria-pressed', String(on));
+        }
+        if (priceEl && option.dataset.priceLabel) {
+          priceEl.textContent = option.dataset.priceLabel;
+        }
+        if (waCta && option.dataset.wa) {
+          waCta.href = option.dataset.wa;
+        }
       });
     }
   }

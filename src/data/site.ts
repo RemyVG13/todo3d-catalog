@@ -34,11 +34,27 @@ export const site = {
 } as const;
 
 // Construye el enlace de WhatsApp con un mensaje pre-rellenado.
-export function whatsappLink(productTitle?: string): string | null {
+export function whatsappLink(
+  productTitle?: string,
+  variantName?: string
+): string | null {
   if (!site.whatsapp) return null;
   const base = `https://wa.me/${site.whatsapp}`;
-  const text = productTitle
-    ? `Hola ${site.name}, me interesa el producto: ${productTitle}`
-    : `Hola ${site.name}, quiero más información sobre sus productos`;
+  let text = `Hola ${site.name}, quiero más información sobre sus productos`;
+  if (productTitle) {
+    text = variantName
+      ? `Hola ${site.name}, me interesa el producto: ${productTitle} — ${variantName}`
+      : `Hola ${site.name}, me interesa el producto: ${productTitle}`;
+  }
   return `${base}?text=${encodeURIComponent(text)}`;
+}
+
+// Mensaje cuando no hay resultados: pide crear el producto.
+export function whatsappRequestLink(search?: string): string | null {
+  if (!site.whatsapp) return null;
+  const detail = search?.trim()
+    ? ` Busqué: "${search.trim()}".`
+    : '';
+  const text = `Hola ${site.name}, no encontré lo que busco en el catálogo.${detail} ¿Pueden crearlo?`;
+  return `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(text)}`;
 }

@@ -3,42 +3,61 @@ import type { ImageMetadata } from 'astro';
 import { site } from '../data/site';
 
 export type Product = CollectionEntry<'products'>;
+export type ProductVariant = Product['data']['variants'][number];
+export type ImageFit = 'contain' | 'cover';
+export type CatalogImage = {
+  src: ImageMetadata;
+  filename: string;
+};
 
 // Todas las imágenes de todos los productos, resueltas en build.
-// La clave es la ruta del archivo; el valor es el ImageMetadata (para <Image />).
 const imageModules = import.meta.glob<{ default: ImageMetadata }>(
   '/src/content/products/**/*.{jpg,jpeg,png,webp,avif}',
   { eager: true }
 );
 
-// slug del producto -> lista de imágenes ordenadas (cover.* primero).
-const imagesBySlug = new Map<string, ImageMetadata[]>();
+const imagesBySlug = new Map<string, CatalogImage[]>();
 
 for (const [path, mod] of Object.entries(imageModules)) {
-  const match = path.match(/\/products\/([^/]+)\//);
+  const match = path.match(/\/products\/([^/]+)\/([^/]+)$/);
   if (!match) continue;
   const slug = match[1];
+  const filename = match[2];
   const list = imagesBySlug.get(slug) ?? [];
-  list.push(mod.default);
+  list.push({ src: mod.default, filename });
   imagesBySlug.set(slug, list);
 }
 
-// Ordena poniendo cualquier archivo llamado "cover" primero, luego alfabético.
-function sortImages(images: ImageMetadata[]): ImageMetadata[] {
+function sortImages(images: CatalogImage[]): CatalogImage[] {
   return [...images].sort((a, b) => {
-    const aCover = /\/cover\.[a-z]+$/i.test(a.src) ? 0 : 1;
-    const bCover = /\/cover\.[a-z]+$/i.test(b.src) ? 0 : 1;
+    const aCover = /^cover\./i.test(a.filename) ? 0 : 1;
+    const bCover = /^cover\./i.test(b.filename) ? 0 : 1;
     if (aCover !== bCover) return aCover - bCover;
-    return a.src.localeCompare(b.src);
+    return a.filename.localeCompare(b.filename);
   });
 }
 
-export function getProductImages(slug: string): ImageMetadata[] {
+export function getProductImages(slug: string): CatalogImage[] {
   return sortImages(imagesBySlug.get(slug) ?? []);
 }
 
-export function getCoverImage(slug: string): ImageMetadata | undefined {
+export function getCoverImage(slug: string): CatalogImage | undefined {
   return getProductImages(slug)[0];
+}
+
+export function resolveImageDisplay(
+  product: Product,
+  filename: string
+): { fit: ImageFit; position: string } {
+  const overrides = product.data.imageAdjust;
+  const key = Object.keys(overrides).find(
+    (name) => name.toLowerCase() === filename.toLowerCase()
+  );
+  const override = key ? overrides[key] : undefined;
+  return {
+    fit: override?.fit ?? product.data.imageFit,
+    position: override?.position ?? product.data.imagePosition,
+  };
 }
 
 // Productos visibles (excluye draft), ordenados por `order` y luego por título.
@@ -75,4 +94,23 @@ export function formatPrice(
   } catch {
     return `${price} ${cur}`;
   }
+}
+
+// Precios vigentes: las variantes ganan si existen; si no, el `price` único.
+export function getOfferPrices(product: Product): number[] {
+  if (product.data.variants.length > 0) {
+    return product.data.variants.map((v) => v.price);
+  }
+  return product.data.price != null ? [product.data.price] : [];
+}
+
+// En el listado: "Desde Bs 20" si hay más de un precio; si no, el precio único.
+export function formatProductPrice(product: Product): string | null {
+  const prices = getOfferPrices(product);
+  if (prices.length === 0) return null;
+  const min = Math.min(...prices);
+  const formatted = formatPrice(min, product.data.currency);
+  if (!formatted) return null;
+  const hasRange = prices.some((p) => p !== min);
+  return hasRange ? `Desde ${formatted}` : formatted;
 }

@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { Product } from '../lib/catalog';
-import { getProductImages, formatPrice } from '../lib/catalog';
+import { getProductImages, formatProductPrice, resolveImageDisplay } from '../lib/catalog';
 
 interface Props {
   product: Product;
@@ -9,7 +9,7 @@ interface Props {
 
 const { product } = Astro.props;
 const images = getProductImages(product.id);
-const price = formatPrice(product.data.price, product.data.currency);
+const price = formatProductPrice(product);
 const href = `/producto/${product.id}/`;
 const hasCarousel = images.length > 1;
 // data-title y data-tags permiten buscar y filtrar en el cliente sin recargar.
@@ -25,19 +25,23 @@ const tagsAttr = product.data.tags.join(',');
       images.length > 0 ? (
         <div class="carousel-viewport">
           <ul class="carousel-track">
-            {images.map((img, i) => (
+            {images.map((img, i) => {
+              const display = resolveImageDisplay(product, img.filename);
+              return (
               <li class="carousel-slide">
                 <a href={href} tabindex={i === 0 ? 0 : -1} aria-label={product.data.title}>
                   <Image
-                    src={img}
+                    src={img.src}
                     alt={`${product.data.title} — foto ${i + 1}`}
                     widths={[300, 480, 640]}
                     sizes="(min-width: 900px) 300px, (min-width: 600px) 45vw, 90vw"
                     class="card-img"
+                    style={`object-fit: ${display.fit}; object-position: ${display.position};`}
                   />
                 </a>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       ) : (
@@ -139,7 +143,8 @@ const tagsAttr = product.data.tags.join(',');
   .card-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
   }
   .placeholder {
     display: flex;
