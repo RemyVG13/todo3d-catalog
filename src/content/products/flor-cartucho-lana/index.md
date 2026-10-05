@@ -1,5 +1,5 @@
 ---
-title: Flor Cartucho Estilo Tejido
+title: Arreglo de Cartuchos Estilo Tejido
 price: 65
 currency: BOB
 tags: [flor, decoracion, amor]
