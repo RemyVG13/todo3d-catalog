@@ -32,14 +32,15 @@ const price = formatPrice(
   initialVariant?.price ?? product.data.price,
   product.data.currency
 );
-const wa = whatsappLink(product.data.title, initialVariant?.name);
+const colorChoice = product.data.colorChoice;
+const wa = whatsappLink(product.data.title, initialVariant?.name, colorChoice);
 
 const variantPayload = variants.map((v) => ({
   name: v.name,
   note: v.note ?? '',
   price: v.price,
   priceLabel: formatPrice(v.price, product.data.currency) ?? '',
-  wa: whatsappLink(product.data.title, v.name) ?? '',
+  wa: whatsappLink(product.data.title, v.name, colorChoice) ?? '',
 }));
 
 // Ficha técnica: solo mostramos los campos que existen.
@@ -106,6 +107,13 @@ const specs = [
     <section class="info">
       <h1>{product.data.title}</h1>
       {price && <p class="price" id="selected-price">{price}</p>}
+      {
+        colorChoice && (
+          <p class="color-note">
+            El color de las fotos es de referencia. Puedes elegir el tuyo; lo confirmamos por WhatsApp.
+          </p>
+        )
+      }
 
       {
         hasVariants && (
@@ -249,7 +257,17 @@ const specs = [
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--accent);
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.5rem;
+  }
+  .color-note {
+    margin: 0 0 1rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: #f3fbfb;
+    border: 1px solid rgba(55, 170, 174, 0.35);
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.4;
   }
   .variants {
     display: flex;

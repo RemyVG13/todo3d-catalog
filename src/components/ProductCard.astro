@@ -1,7 +1,12 @@
 ---
 import { Image } from 'astro:assets';
 import type { Product } from '../lib/catalog';
-import { getProductImages, formatProductPrice, resolveImageDisplay } from '../lib/catalog';
+import {
+  getProductImages,
+  formatProductPrice,
+  resolveImageDisplay,
+  getOfferPrices,
+} from '../lib/catalog';
 
 interface Props {
   product: Product;
@@ -10,13 +15,20 @@ interface Props {
 const { product } = Astro.props;
 const images = getProductImages(product.id);
 const price = formatProductPrice(product);
+const offerPrices = getOfferPrices(product);
+const sortPrice = offerPrices.length > 0 ? Math.min(...offerPrices) : '';
 const href = `/producto/${product.id}/`;
 const hasCarousel = images.length > 1;
-// data-title y data-tags permiten buscar y filtrar en el cliente sin recargar.
+// data-title, data-tags y data-price permiten buscar, filtrar y ordenar sin recargar.
 const tagsAttr = product.data.tags.join(',');
 ---
 
-<article class="card" data-title={product.data.title} data-tags={tagsAttr}>
+<article
+  class="card"
+  data-title={product.data.title}
+  data-tags={tagsAttr}
+  data-price={sortPrice}
+>
   <div
     class="card-media"
     data-carousel={hasCarousel ? 'true' : undefined}
@@ -86,6 +98,7 @@ const tagsAttr = product.data.tags.join(',');
   <a href={href} class="card-body">
     <h3 class="card-title">{product.data.title}</h3>
     {price && <p class="card-price">{price}</p>}
+    {product.data.colorChoice && <p class="card-color">Color a elección</p>}
     {
       product.data.tags.length > 0 && (
         <ul class="card-tags">
@@ -223,9 +236,14 @@ const tagsAttr = product.data.tags.join(',');
     font-size: 1.05rem;
   }
   .card-price {
-    margin: 0 0 0.6rem;
+    margin: 0 0 0.2rem;
     color: var(--accent);
     font-weight: 700;
+  }
+  .card-color {
+    margin: 0 0 0.6rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
   }
   .card-tags {
     list-style: none;

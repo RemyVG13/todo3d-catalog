@@ -51,6 +51,8 @@ const products = defineCollection({
       .default({}),
     // Marca un producto como oculto sin borrarlo.
     draft: z.boolean().default(false),
+    // La foto es de referencia: el cliente elige el color al pedir.
+    colorChoice: z.boolean().default(true),
   }),
 });
 

@@ -10,7 +10,7 @@ export const site = {
 
   // Número de WhatsApp en formato internacional SIN "+", espacios ni guiones.
   // Ejemplo Colombia: 57 + número => '573001234567'. Déjalo vacío para ocultar el botón.
-  whatsapp: '59161680104',
+  whatsapp: '59175820165',
 
   // Moneda por defecto si un producto no define la suya (bolivianos).
   currency: 'BOB',
@@ -36,7 +36,8 @@ export const site = {
 // Construye el enlace de WhatsApp con un mensaje pre-rellenado.
 export function whatsappLink(
   productTitle?: string,
-  variantName?: string
+  variantName?: string,
+  colorChoice = false
 ): string | null {
   if (!site.whatsapp) return null;
   const base = `https://wa.me/${site.whatsapp}`;
@@ -45,6 +46,7 @@ export function whatsappLink(
     text = variantName
       ? `Hola ${site.name}, me interesa el producto: ${productTitle} — ${variantName}`
       : `Hola ${site.name}, me interesa el producto: ${productTitle}`;
+    if (colorChoice) text += '. Quiero elegir el color';
   }
   return `${base}?text=${encodeURIComponent(text)}`;
 }

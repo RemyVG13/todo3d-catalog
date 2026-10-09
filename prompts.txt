@@ -1,0 +1,50 @@
+--Prompt facebook Marketplace
+
+Edit this product photo for social media marketing for ToDo3D (the logo is attached in the second image), a 3D printing brand in Bolivia.
+Keep the product exactly the same as in the reference image: same shape, colors, proportions, materials, and details. Do not invent a different product.
+Improve only: lighting, background, composition, and presentation quality.
+Clean professional product photography, sharp focus, realistic materials, no blurry AI look.
+No fake logos, no watermarks, no random text unless I request it.
+
+Using the uploaded product photo, create a clean Facebook Marketplace listing image.
+Keep the product 100% identical to the reference.
+Place it centered on a simple neutral background (soft white, light gray, or light wood surface).
+Bright, even lighting, soft natural shadow under the product.
+Product fills most of the frame, easy to understand at thumbnail size.
+No lifestyle clutter, no people, no busy props, no text overlay, no price tag, no logo.
+Realistic e-commerce product photo style, high clarity, sharp edges.
+Aspect ratio 1:1.
+
+-variant
+Using the uploaded product photo, create a Marketplace-ready product image.
+Keep the product identical.
+Show it on a clean desk or table with very minimal props (one notebook or plant at most).
+Background slightly blurred, product sharp and dominant.
+No text, no logos, no people.
+Honest, realistic, high-trust product photo for local selling in Bolivia.
+Aspect ratio 1:1.
+
+--Prompt facebook Normal
+
+Edit this product photo for social media marketing for ToDo3D (the logo is attached in the second image), a 3D printing brand in Bolivia.
+Keep the product exactly the same as in the reference image: same shape, colors, proportions, materials, and details. Do not invent a different product.
+Improve only: lighting, background, composition, and presentation quality.
+Clean professional product photography, sharp focus, realistic materials, no blurry AI look.
+No fake logos, no watermarks, no random text unless I request it.
+
+Transform this product photo into a Facebook feed post image for ToDo3D Bolivia.
+Keep the product exactly the same as the reference.
+Create a modern branded product scene with soft gradient or clean studio background in teal and charcoal tones (#37AAAE accent feel, not purple).
+Product centered, premium lighting, subtle reflection optional.
+Leave clean negative space at the bottom or side for optional caption text later.
+No heavy text, no price, no fake badges, no stickers.
+Professional small-business social media look.
+Aspect ratio 4:5.
+
+Same as above, but add clean minimal text:
+Top small: "ToDo3D"
+Bottom: "Rosa apriencia tejido"
+dimensions: "7 × 7 × 12 cm"
+Use modern sans-serif, white or dark charcoal text, high contrast, no neon, no clutter.
+Keep product identical.
+Aspect ratio 4:5.

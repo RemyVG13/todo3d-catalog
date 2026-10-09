@@ -6,4 +6,4 @@ tags: [juguete, robot, navidad]
 dimensions: "6 × 6 × 6 cm"
 order: 1
 ---
-Caja de regalo sorpresa. Estilo Mimic 
+Caja de regalo sorpresa.  Mimic 
