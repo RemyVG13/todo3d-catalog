@@ -93,11 +93,43 @@ const requestWa = whatsappRequestLink();
       </p>
     ) : (
       <>
+        <script is:inline>
+          (function () {
+            try {
+              var params = new URLSearchParams(location.search);
+              var por = Number(params.get('por'));
+              var pagina = Number(params.get('pagina')) || 1;
+              if (pagina > 1 || (por && por !== 12)) {
+                document.documentElement.classList.add('catalog-defer');
+              }
+            } catch (e) {}
+          })();
+        </script>
         <div class="grid" id="product-grid">
           {products.map((product) => (
             <ProductCard product={product} />
           ))}
         </div>
+        <nav
+          class="pagination"
+          id="catalog-pagination"
+          aria-label="Paginación del catálogo"
+          hidden
+        >
+          <p class="pagination-status" id="pagination-status"></p>
+          <div class="pagination-bar">
+            <div class="page-size">
+              <label for="catalog-page-size">Mostrar</label>
+              <select id="catalog-page-size" name="por">
+                <option value="12" selected>12 por página</option>
+                <option value="24">24 por página</option>
+                <option value="48">48 por página</option>
+                <option value="96">96 por página</option>
+              </select>
+            </div>
+            <div class="page-nav" id="page-nav"></div>
+          </div>
+        </nav>
         <div class="empty empty-request" id="no-results" hidden>
           <p>
             No encontramos lo que buscas. Si no está en el catálogo, escríbenos
@@ -234,6 +266,49 @@ const requestWa = whatsappRequestLink();
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
     gap: clamp(1rem, 3vw, 1.5rem);
   }
+  .pagination {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .pagination[hidden] {
+    display: none;
+  }
+  .pagination-status {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+  .pagination-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.85rem 1.25rem;
+  }
+  .page-size label {
+    display: block;
+    margin: 0 0 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .page-size select {
+    min-height: 44px;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    outline: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .page-size select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(55, 170, 174, 0.2);
+  }
   .empty {
     color: var(--text-muted);
     padding: 2rem 0;
@@ -255,8 +330,63 @@ const requestWa = whatsappRequestLink();
   }
 </style>
 
+<style is:global>
+  /* .card vive en ProductCard, así que estas reglas van sin el atributo
+     de alcance de esta página. Antes del script solo se pintan 12. */
+  html.catalog-defer #product-grid .card {
+    display: none !important;
+  }
+  #product-grid:not(.is-paged) .card:nth-child(n + 13) {
+    display: none;
+  }
+  .catalog-toolbar {
+    scroll-margin-top: 5.5rem;
+  }
+  /* Los botones de página se crean con JavaScript y no heredan el alcance de Astro. */
+  #page-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  #page-nav .page-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+  #page-nav .page-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  #page-nav .page-btn.is-current {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+  #page-nav .page-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  #page-nav .page-ellipsis {
+    min-width: 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+  }
+</style>
+
 <script>
-  // Búsqueda por título o tags + filtro por categorías, todo en el cliente.
+  // Búsqueda, filtro, orden y paginación, todo en el cliente.
+  // Por defecto se muestran 12 productos. El resto queda oculto para que el
+  // navegador no descargue sus fotos hasta cambiar de página.
   // La búsqueda es insensible a mayúsculas y acentos. Tags y texto se combinan
   // (AND): el producto debe coincidir con el texto y con alguna categoría activa.
   //
@@ -272,7 +402,16 @@ const requestWa = whatsappRequestLink();
   const sortSelect = document.getElementById(
     'catalog-sort'
   ) as HTMLSelectElement | null;
+  const pageSizeSelect = document.getElementById(
+    'catalog-page-size'
+  ) as HTMLSelectElement | null;
+  const pagination = document.getElementById('catalog-pagination');
+  const paginationStatus = document.getElementById('pagination-status');
+  const pageNav = document.getElementById('page-nav');
   const sortModes = new Set(['catalogo', 'az', 'za', 'barato', 'caro']);
+  const pageSizes = [12, 24, 48, 96];
+  let pageSize = 12;
+  let page = 1;
 
   function normalize(value: string): string {
     return value
@@ -344,27 +483,137 @@ const requestWa = whatsappRequestLink();
       for (const card of sorted) grid.appendChild(card);
     }
 
-    function apply() {
-      sortCards();
-      const query = normalize(searchInput?.value ?? '');
-      let visible = 0;
-      for (const card of cards) {
-        const title = card.dataset.title || '';
-        const tags = (card.dataset.tags || '')
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean);
-        const matchesSearch =
-          query.length === 0 ||
-          normalize(title).includes(query) ||
-          tags.some((t) => normalize(t).includes(query));
-        const matchesTags =
-          selected.size === 0 || tags.some((t) => selected.has(t));
-        const show = matchesSearch && matchesTags;
-        card.hidden = !show;
-        if (show) visible++;
+    function cardMatches(card: HTMLElement, query: string): boolean {
+      const title = card.dataset.title || '';
+      const tags = (card.dataset.tags || '')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const matchesSearch =
+        query.length === 0 ||
+        normalize(title).includes(query) ||
+        tags.some((t) => normalize(t).includes(query));
+      const matchesTags =
+        selected.size === 0 || tags.some((t) => selected.has(t));
+      return matchesSearch && matchesTags;
+    }
+
+    function visiblePageNumbers(current: number, total: number): Array<number | '…'> {
+      if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+      const wanted = new Set<number>([1, total, current - 1, current, current + 1]);
+      if (current <= 3) {
+        wanted.add(2);
+        wanted.add(3);
+        wanted.add(4);
       }
-      if (noResults) noResults.hidden = visible !== 0;
+      if (current >= total - 2) {
+        wanted.add(total - 1);
+        wanted.add(total - 2);
+        wanted.add(total - 3);
+      }
+      const nums = [...wanted].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+      const out: Array<number | '…'> = [];
+      let prev = 0;
+      for (const n of nums) {
+        if (prev && n - prev > 1) out.push('…');
+        out.push(n);
+        prev = n;
+      }
+      return out;
+    }
+
+    function renderPager(total: number, pageCount: number, start: number) {
+      if (!pagination || !paginationStatus || !pageNav) return;
+      if (total === 0) {
+        pagination.hidden = true;
+        pageNav.replaceChildren();
+        return;
+      }
+      pagination.hidden = false;
+      const end = Math.min(start + pageSize, total);
+      paginationStatus.textContent =
+        pageCount === 1
+          ? `Mostrando ${total} ${total === 1 ? 'producto' : 'productos'}`
+          : `Mostrando ${start + 1}–${end} de ${total}`;
+
+      pageNav.replaceChildren();
+
+      function addButton(
+        label: string,
+        target: number,
+        options: { disabled?: boolean; current?: boolean; labelText?: string } = {}
+      ) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'page-btn';
+        button.textContent = label;
+        if (options.current) {
+          button.classList.add('is-current');
+          button.setAttribute('aria-current', 'page');
+        }
+        button.setAttribute(
+          'aria-label',
+          options.labelText || (options.current ? `Página ${target}` : `Ir a la página ${target}`)
+        );
+        button.disabled = Boolean(options.disabled);
+        if (!options.disabled && !options.current) {
+          button.addEventListener('click', () => {
+            page = target;
+            apply({ scroll: true });
+            writeUrl();
+          });
+        }
+        pageNav?.append(button);
+      }
+
+      addButton('Anterior', page - 1, {
+        disabled: page <= 1,
+        labelText: 'Página anterior',
+      });
+      for (const item of visiblePageNumbers(page, pageCount)) {
+        if (item === '…') {
+          const ellipsis = document.createElement('span');
+          ellipsis.className = 'page-ellipsis';
+          ellipsis.textContent = '…';
+          ellipsis.setAttribute('aria-hidden', 'true');
+          pageNav.append(ellipsis);
+        } else {
+          addButton(String(item), item, { current: item === page });
+        }
+      }
+      addButton('Siguiente', page + 1, {
+        disabled: page >= pageCount,
+        labelText: 'Página siguiente',
+      });
+    }
+
+    function apply(options: { resetPage?: boolean; scroll?: boolean } = {}) {
+      if (options.resetPage) page = 1;
+      sortCards();
+      const order = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+      const query = normalize(searchInput?.value ?? '');
+      const matched: HTMLElement[] = [];
+      for (const card of order) {
+        if (cardMatches(card, query)) matched.push(card);
+        else card.hidden = true;
+      }
+      const pageCount = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page > pageCount) page = pageCount;
+      if (page < 1) page = 1;
+      const start = (page - 1) * pageSize;
+      matched.forEach((card, index) => {
+        card.hidden = index < start || index >= start + pageSize;
+      });
+      renderPager(matched.length, matched.length === 0 ? 0 : pageCount, start);
+      grid.classList.add('is-paged');
+      document.documentElement.classList.remove('catalog-defer');
+      if (noResults) noResults.hidden = matched.length !== 0;
+      if (options.scroll) {
+        document.querySelector('.catalog-toolbar')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
       const wa = document.getElementById(
         'no-results-wa'
       ) as HTMLAnchorElement | null;
@@ -390,6 +639,10 @@ const requestWa = whatsappRequestLink();
       const orden = sortSelect?.value || 'catalogo';
       if (orden !== 'catalogo') params.set('orden', orden);
       else params.delete('orden');
+      if (page > 1) params.set('pagina', String(page));
+      else params.delete('pagina');
+      if (pageSize !== 12) params.set('por', String(pageSize));
+      else params.delete('por');
       const next = params.toString();
       const url = next ? `${window.location.pathname}?${next}` : window.location.pathname;
       history.replaceState(null, '', url);
@@ -410,19 +663,35 @@ const requestWa = whatsappRequestLink();
       if (q && searchInput) searchInput.value = q;
       const orden = params.get('orden') || 'catalogo';
       if (sortSelect && sortModes.has(orden)) sortSelect.value = orden;
+      const por = Number(params.get('por'));
+      if (pageSizes.includes(por)) {
+        pageSize = por;
+        if (pageSizeSelect) pageSizeSelect.value = String(por);
+      }
+      const pagina = Number(params.get('pagina'));
+      if (Number.isInteger(pagina) && pagina > 0) page = pagina;
     }
 
     readUrl();
     syncButtons();
     apply();
+    writeUrl();
 
     searchInput?.addEventListener('input', () => {
-      apply();
+      apply({ resetPage: true });
       writeUrl();
     });
 
     sortSelect?.addEventListener('change', () => {
-      apply();
+      apply({ resetPage: true });
+      writeUrl();
+    });
+
+    pageSizeSelect?.addEventListener('change', () => {
+      const next = Number(pageSizeSelect.value);
+      if (!pageSizes.includes(next)) return;
+      pageSize = next;
+      apply({ resetPage: true });
       writeUrl();
     });
 
@@ -438,7 +707,7 @@ const requestWa = whatsappRequestLink();
           selected.add(tag);
         }
         syncButtons();
-        apply();
+        apply({ resetPage: true });
         writeUrl();
       });
     }

@@ -23,6 +23,8 @@ const products = defineCollection({
           name: z.string(),
           price: z.number(),
           note: z.string().optional(),
+          // Si la variante tiene otro tamaño, pisa las medidas del producto.
+          dimensions: z.string().optional(),
         })
       )
       .default([]),

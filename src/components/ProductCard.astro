@@ -47,6 +47,7 @@ const tagsAttr = product.data.tags.join(',');
                     alt={`${product.data.title} — foto ${i + 1}`}
                     widths={[300, 480, 640]}
                     sizes="(min-width: 900px) 300px, (min-width: 600px) 45vw, 90vw"
+                    loading="lazy"
                     class="card-img"
                     style={`object-fit: ${display.fit}; object-position: ${display.position};`}
                   />

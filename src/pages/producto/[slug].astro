@@ -35,18 +35,28 @@ const price = formatPrice(
 const colorChoice = product.data.colorChoice;
 const wa = whatsappLink(product.data.title, initialVariant?.name, colorChoice);
 
+const fallbackDimensions = product.data.dimensions ?? '';
+const initialDimensions = initialVariant?.dimensions || fallbackDimensions;
+
 const variantPayload = variants.map((v) => ({
   name: v.name,
   note: v.note ?? '',
   price: v.price,
   priceLabel: formatPrice(v.price, product.data.currency) ?? '',
+  dimensions: v.dimensions || fallbackDimensions,
   wa: whatsappLink(product.data.title, v.name, colorChoice) ?? '',
 }));
 
 // Ficha técnica: solo mostramos los campos que existen.
+// Las medidas salen de la variante elegida, o de las del producto si esa variante no trae las suyas.
 const specs = [
   { label: 'Material', value: product.data.material },
-  { label: 'Medidas', value: product.data.dimensions },
+  {
+    label: 'Medidas',
+    value: initialDimensions || undefined,
+    id: 'spec-dimensions',
+    fallback: fallbackDimensions,
+  },
   { label: 'Peso', value: product.data.weight },
 ].filter((s) => s.value);
 ---
@@ -125,6 +135,7 @@ const specs = [
                 class:list={['variant', { 'is-active': i === 0 }]}
                 data-name={v.name}
                 data-price-label={v.priceLabel}
+                data-dimensions={v.dimensions}
                 data-wa={v.wa}
                 aria-pressed={i === 0 ? 'true' : 'false'}
               >
@@ -159,7 +170,9 @@ const specs = [
             {specs.map((s) => (
               <div class="spec-row">
                 <dt>{s.label}</dt>
-                <dd>{s.value}</dd>
+                <dd id={s.id} data-fallback={s.fallback}>
+                  {s.value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -381,9 +394,10 @@ const specs = [
     }
   }
 
-  // Selección de variante: actualiza precio visible y el mensaje de WhatsApp.
+  // Selección de variante: actualiza precio, medidas y el mensaje de WhatsApp.
   const variantBox = document.getElementById('variants');
   const priceEl = document.getElementById('selected-price');
+  const dimensionsEl = document.getElementById('spec-dimensions');
   const waCta = document.getElementById('wa-cta') as HTMLAnchorElement | null;
   if (variantBox) {
     const options = Array.from(
@@ -398,6 +412,10 @@ const specs = [
         }
         if (priceEl && option.dataset.priceLabel) {
           priceEl.textContent = option.dataset.priceLabel;
+        }
+        if (dimensionsEl) {
+          const next = option.dataset.dimensions || dimensionsEl.dataset.fallback || '';
+          if (next) dimensionsEl.textContent = next;
         }
         if (waCta && option.dataset.wa) {
           waCta.href = option.dataset.wa;
